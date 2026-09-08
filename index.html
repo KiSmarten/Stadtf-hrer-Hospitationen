@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8C3B2F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hospitationen">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Pflichthospitationen</title>
+<style>
+  :root{
+    --brick:#8C3B2F; --brick-soft:#F1E3E0; --paper:#FAF7F2; --ink:#241F1D;
+    --line:#E7E0D6; --muted:#7A6E66; --faint:#9A8F86; --green:#3F7A4F;
+    --green-soft:#E4EFE6; --amber:#B07B14; --red:#A32F22; --red-soft:#FBECE9;
+    --field:#D8CFC2; --track:#E7E0D6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; background:var(--paper); color:var(--ink)}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+    -webkit-text-size-adjust:100%;
+  }
+  header{padding:20px 16px 12px; border-bottom:1px solid var(--line)}
+  header h1{font-family:Georgia,"Times New Roman",serif; font-size:21px; margin:0; font-weight:600}
+  header p{margin:2px 0 0; font-size:14px; color:var(--muted)}
+  main{padding:16px 16px 0}
+  h2{font-size:13px; color:var(--muted); margin:0 0 8px}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px}
+  .stack>*+*{margin-top:8px}
+  .warn{display:flex; gap:8px; padding:12px; border-radius:10px; background:var(--red-soft); color:var(--red); font-size:14px; margin-bottom:12px}
+  .total{padding:16px; margin-bottom:16px}
+  .total .num{font-size:32px; font-weight:700; color:var(--brick); line-height:1}
+  .total .of{font-size:18px; color:var(--muted)}
+  .flexb{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px}
+  .bar{height:8px; border-radius:99px; background:var(--track); overflow:hidden}
+  .bar > i{display:block; height:100%; border-radius:99px; background:var(--brick); transition:width .25s ease}
+  .bar > i.done{background:var(--green)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .kpi{padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff}
+  .kpi .lab{font-size:12px; color:var(--muted)}
+  .kpi .val{font-size:18px; font-weight:600; line-height:1.2}
+  .kpi .sub{font-size:12px; color:var(--muted); margin-top:2px}
+  .dot{display:inline-block; width:12px; height:12px; border-radius:99px}
+  .cat{width:100%; text-align:left; background:none; border:0; padding:12px 16px; font:inherit; color:inherit; display:block}
+  .cat .head{display:flex; gap:8px; align-items:flex-start}
+  .tag{flex:0 0 auto; width:22px; height:22px; border-radius:6px; font-size:12px; font-weight:700;
+       display:flex; align-items:center; justify-content:center; background:var(--brick-soft); color:var(--brick); margin-top:2px}
+  .tag.ok{background:var(--green-soft); color:var(--green)}
+  .cat .name{font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cat .cnt{font-size:14px; color:var(--muted); flex:0 0 auto; display:flex; align-items:center; gap:4px}
+  .cat .cnt.ok{color:var(--green)}
+  .meta{font-size:12px; color:var(--muted); margin-top:6px}
+  .over{color:var(--brick)}
+  .subs{padding:4px 16px 12px; border-top:1px solid #F0EAE0}
+  .subrow{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:14px}
+  .subrow .r{font-size:12px; color:var(--muted)}
+  .subrow .r.ok{color:var(--green)}
+  .item{display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fff; border:1px solid var(--line); border-radius:12px}
+  .item.past{background:var(--red-soft); border-color:#E4B7AE}
+  .item .body{flex:1; min-width:0}
+  .item .t{font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .item .s{font-size:12px; color:var(--muted); background:none; border:0; padding:0; font-family:inherit; text-align:left}
+  .item.past .s{color:var(--red)}
+  .item .s.todo{color:var(--brick)}
+  .ic{flex:0 0 auto; border:0; border-radius:9px; padding:9px; background:#F3EDE4; color:var(--muted); line-height:0}
+  .ic.ok{background:var(--green-soft); color:var(--green)}
+  .ic svg{width:16px; height:16px; display:block}
+  .btn{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:10px;
+       padding:12px; font:inherit; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px}
+  .btn svg{width:15px; height:15px}
+  .primary{background:var(--brick); color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:500; width:100%;
+           display:flex; align-items:center; justify-content:center; gap:8px}
+  .primary[disabled]{background:var(--line); color:var(--faint)}
+  .fixed{position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+         background:var(--paper); border-top:1px solid var(--line)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:10px; padding:8px 12px; font:inherit; font-size:14px}
+  .chip.on{background:var(--brick); color:#fff; border-color:var(--brick)}
+  .chip.sm{padding:6px 12px}
+  .lab{font-size:12px; color:var(--muted); margin-bottom:6px}
+  input[type=date],input[type=time],input[type=text]{
+    width:100%; border:1px solid var(--field); background:#fff; color:var(--ink);
+    border-radius:10px; padding:12px; font:inherit; font-size:16px}
+  .scrim{position:fixed; inset:0; background:rgba(36,31,29,.45); display:flex; align-items:flex-end; z-index:50}
+  .sheet{width:100%; background:var(--paper); border-radius:16px 16px 0 0; padding:16px;
+         padding-bottom:calc(16px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto}
+  .sheet h3{margin:0; font-size:16px; font-weight:600}
+  .sheet .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  textarea{width:100%; height:260px; border:1px solid var(--field); border-radius:10px; padding:8px;
+           font-family:ui-monospace,monospace; font-size:12px; background:#fff; color:var(--ink)}
+  .mb4{margin-bottom:16px} .mb3{margin-bottom:12px} .mb2{margin-bottom:8px} .mb6{margin-bottom:24px}
+  .hint{font-size:12px; color:var(--faint)}
+  .hidden{display:none}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--brick); outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pflichthospitationen</h1>
+  <p>Stadtführung Lübeck · Frist 27.12.2026</p>
+</header>
+<main id="app"></main>
+<div class="fixed"><button class="primary" data-act="new">+ Eintragen</button></div>
+<div id="overlay"></div>
+<input id="file" type="file" accept="application/json,.json" class="hidden">
+
+<script>
+"use strict";
+
+/* ---------- Konfiguration ---------- */
+var DEADLINE = new Date(2026, 11, 27);
+var KEY = "hospitationen_stadtfuehrung_v1";
+
+var CATS = [
+  {id:"A", name:"Öffentliche Führungen", soll:6, mode:"frei", hinweis:"Bei verschiedenen Guides."},
+  {id:"B", name:"Öffentliche Gängeführungen", soll:6, mode:"kontingent", subs:[
+    {id:"handwerker", name:"Handwerkerviertel", soll:2},
+    {id:"seefahrer", name:"Seefahrerviertel", soll:2},
+    {id:"dom", name:"Domviertel", soll:2}
+  ]},
+  {id:"C", name:"Öffentliche Abendführungen", soll:3, mode:"verschieden", hinweis:"Nur unterschiedliche Themen zählen.", subs:[
+    {id:"sexcrime", name:"Sex & Crime"},
+    {id:"nachtwaechter", name:"Nachtwächter"},
+    {id:"mystica", name:"Lubeca Mystica"},
+    {id:"kostuem", name:"Kostümführung"},
+    {id:"weihnachten", name:"Weihnachtsführung"}
+  ]},
+  {id:"D", name:"Touren mit Verköstigung", soll:1, mode:"verschieden", hinweis:"Nur unterschiedliche Themen zählen.", subs:[
+    {id:"marzipan", name:"Marzipan"},
+    {id:"kulinarisch", name:"Kulinarisch"},
+    {id:"bier", name:"Bier"}
+  ]},
+  {id:"E", name:"Schülerführungen", soll:3, mode:"frei", hinweis:"Über den Gästeservice."},
+  {id:"F", name:"Private Gruppen", soll:4, mode:"frei", hinweis:"Über den Gästeservice."},
+  {id:"G", name:"Lübsche Verführung", soll:1, mode:"frei", hinweis:"Spezielle Themenführung."}
+];
+var CAT = {}; CATS.forEach(function(c){ CAT[c.id] = c; });
+
+function subName(catId, subId){
+  var c = CAT[catId]; if(!c || !c.subs) return subId;
+  var s = c.subs.filter(function(x){ return x.id === subId; })[0];
+  return s ? s.name : subId;
+}
+
+/* ---------- Startbestand: leer, alles wird selbst erfasst ---------- */
+function SEED(){ return []; }
+
+/* ---------- Datum ---------- */
+function pad(n){ return String(n).padStart(2,"0"); }
+function todayISO(){ var d = new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function isoToDe(iso){ if(!iso) return null; var p = iso.split("-"); return p[2]+"."+p[1]+"."+p[0]; }
+function sod(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function parseISO(iso){ var p = iso.split("-").map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function daysBetween(a,b){ return Math.round((sod(b)-sod(a))/86400000); }
+function fmt1(n){ return n.toFixed(1).replace(".",","); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ---------- Auswertung ---------- */
+function auswerten(entries){
+  var done = entries.filter(function(e){ return e.status === "absolviert"; });
+  var cats = CATS.map(function(cat){
+    var mine = done.filter(function(e){ return e.cat === cat.id; });
+    if(cat.mode === "frei"){
+      var ang = Math.min(mine.length, cat.soll);
+      return {cat:cat, gesamt:mine.length, angerechnet:ang, ueber:mine.length-ang, subs:[]};
+    }
+    if(cat.mode === "kontingent"){
+      var subs = cat.subs.map(function(s){
+        var n = mine.filter(function(e){ return e.sub === s.id; }).length;
+        var a = Math.min(n, s.soll);
+        return {sub:s, soll:s.soll, gesamt:n, angerechnet:a, ueber:n-a};
+      });
+      var sum = subs.reduce(function(a,s){ return a+s.angerechnet; },0);
+      return {cat:cat, gesamt:mine.length, angerechnet:sum, ueber:mine.length-sum, subs:subs};
+    }
+    var themen = cat.subs.map(function(s){
+      var list = mine.filter(function(e){ return e.sub === s.id; });
+      var dates = list.map(function(e){ return e.date; }).filter(Boolean).sort();
+      return {sub:s, gesamt:list.length, erst:dates[0] || "9999-99-99"};
+    }).filter(function(t){ return t.gesamt > 0; })
+      .sort(function(a,b){ return a.erst < b.erst ? -1 : (a.erst > b.erst ? 1 : 0); });
+    var ids = {};
+    themen.slice(0, cat.soll).forEach(function(t){ ids[t.sub.id] = true; });
+    var subs2 = cat.subs.map(function(s){
+      var t = themen.filter(function(x){ return x.sub.id === s.id; })[0];
+      var n = t ? t.gesamt : 0;
+      var a = ids[s.id] ? 1 : 0;
+      return {sub:s, soll:1, gesamt:n, angerechnet:a, ueber:n-a};
+    });
+    var anz = Object.keys(ids).length;
+    return {cat:cat, gesamt:mine.length, angerechnet:anz, ueber:mine.length-anz, subs:subs2};
+  });
+
+  var sollSumme = CATS.reduce(function(a,c){ return a+c.soll; },0);
+  var ang = cats.reduce(function(a,c){ return a+c.angerechnet; },0);
+  var rest = Math.max(sollSumme-ang, 0);
+
+  var heute = new Date();
+  var restTage = Math.max(daysBetween(heute, DEADLINE)+1, 0);
+  var wochenVoll = Math.floor(restTage/7);
+  var nenner = wochenVoll > 0 ? wochenVoll : restTage/7;
+  var tempo = rest === 0 ? 0 : (nenner > 0 ? rest/nenner : Infinity);
+
+  var datiert = done.map(function(e){ return e.date; }).filter(Boolean).sort();
+  var schnitt = null;
+  if(datiert.length){
+    var span = Math.max(daysBetween(parseISO(datiert[0]), heute)+1, 1);
+    schnitt = datiert.length/(span/7);
+  }
+
+  var ampel = "neutral";
+  if(rest === 0) ampel = "gruen";
+  else if(restTage <= 0 || !isFinite(tempo)) ampel = "rot";
+  else if(schnitt === null) ampel = "neutral";
+  else if(tempo <= schnitt) ampel = "gruen";
+  else if(tempo <= schnitt*1.3) ampel = "gelb";
+  else ampel = "rot";
+
+  return {cats:cats, sollSumme:sollSumme, angerechnetGesamt:ang, rest:rest,
+          prozent: sollSumme ? ang/sollSumme*100 : 0,
+          restTage:restTage, restWochenVoll:wochenVoll, tempo:tempo, schnitt:schnitt, ampel:ampel,
+          ohneDatum: done.filter(function(e){ return !e.date; }).length};
+}
+
+/* ---------- Zustand + Speicherung ---------- */
+var S = {entries:[], open:{}, sheet:null, edit:null, text:null, confirmDel:false};
+var speicherFehler = null;
+var speicherOk = (function(){
+  try{ localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); return true; }
+  catch(err){ return false; }
+})();
+
+function laden(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    var data = raw ? JSON.parse(raw) : null;
+    S.entries = (data && Array.isArray(data.entries)) ? data.entries : SEED();
+  }catch(err){ S.entries = SEED(); }
+}
+function sichern(){
+  try{ localStorage.setItem(KEY, JSON.stringify({version:1, entries:S.entries})); speicherFehler = null; }
+  catch(err){ speicherFehler = "Speichern fehlgeschlagen. Daten per Export sichern."; }
+}
+
+/* ---------- Icons ---------- */
+var I = {
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 12l5 5 5-5M4 21h16"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M7 12l5-5 5 5M4 3h16"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+};
+
+/* ---------- Rendern ---------- */
+function guideListe(){
+  var seen = {}, out = [];
+  S.entries.forEach(function(e){ if(e.guide && !seen[e.guide]){ seen[e.guide] = 1; out.push(e.guide); } });
+  return out.sort(function(a,b){ return a.localeCompare(b,"de"); });
+}
+
+function render(){
+  var a = auswerten(S.entries);
+  var heute = todayISO();
+  var h = "";
+
+  if(a.sollSumme !== 24)
+    h += '<div class="warn">Die Summe aller Soll-Werte beträgt '+a.sollSumme+', nicht 24. Der Katalog ist nicht konsistent.</div>';
+  if(speicherFehler)
+    h += '<div class="warn">'+esc(speicherFehler)+'</div>';
+
+  /* Gesamt */
+  var ampelFarbe = {gruen:"var(--green)", gelb:"var(--amber)", rot:"var(--red)", neutral:"var(--muted)"}[a.ampel];
+  var ampelText = {gruen:"Im Plan", gelb:"Knapp über dem bisherigen Schnitt", rot:"Nicht im Plan", neutral:"Kein Schnitt berechenbar"}[a.ampel];
+  h += '<section class="card total">'
+    + '<div class="flexb"><div><span class="num">'+a.angerechnetGesamt+'</span><span class="of"> / '+a.sollSumme+'</span></div>'
+    + '<div class="hint" style="color:var(--muted); font-size:14px">'+Math.round(a.prozent)+' % · noch '+a.rest+'</div></div>'
+    + '<div class="bar"><i class="'+(a.rest===0?"done":"")+'" style="width:'+Math.min(a.prozent,100)+'%"></i></div>'
+    + '<div class="grid2" style="margin-top:12px">'
+    + kpi("Verbleibende Zeit", a.restTage+" Tage", a.restWochenVoll+" volle Wochen")
+    + kpi("Nötiges Tempo", isFinite(a.tempo) ? fmt1(a.tempo)+" / Woche" : "—",
+        a.rest===0 ? "Soll erfüllt" : (isFinite(a.tempo) ? "ca. "+fmt1(a.tempo)+" Führungen pro Woche nötig" : "Frist abgelaufen"))
+    + kpi("Bisheriger Schnitt", a.schnitt!==null ? fmt1(a.schnitt)+" / Woche" : "—",
+        a.schnitt===null ? "Keine datierten Einträge" : "seit dem frühesten Datum")
+    + '<div class="kpi"><div class="lab">Status</div><div style="display:flex; align-items:center; gap:8px; margin-top:4px">'
+    + '<span class="dot" style="background:'+ampelFarbe+'"></span>'
+    + '<span style="font-size:14px; font-weight:500; color:'+ampelFarbe+'">'+ampelText+'</span></div></div>'
+    + '</div>';
+  var enZahl = S.entries.filter(function(e){ return e.status === "absolviert" && e.en; }).length;
+  if(enZahl > 0)
+    h += '<p class="hint" style="margin:12px 0 0; color:var(--muted)">Davon auf Englisch: '+enZahl+'</p>';
+  if(a.ohneDatum > 0)
+    h += '<p class="hint" style="margin:12px 0 0; color:var(--muted)">'+a.ohneDatum
+       + ' absolvierte Einträge ohne Datum. Sie zählen im Fortschritt, aber nicht im Schnitt.</p>';
+  h += '</section>';
+
+  /* Kategorien */
+  h += '<h2>Kategorien</h2><div class="stack mb6">';
+  a.cats.forEach(function(c){
+    var fertig = c.angerechnet >= c.cat.soll;
+    var auf = !!S.open[c.cat.id];
+    var hatSubs = c.subs.length > 0;
+    var pct = Math.min(c.angerechnet/c.cat.soll*100, 100);
+    h += '<div class="card">'
+      + '<button class="cat" '+(hatSubs?'data-act="toggle" data-cat="'+c.cat.id+'"':'')+'>'
+      + '<div class="head"><span class="tag'+(fertig?" ok":"")+'">'+c.cat.id+'</span><div style="flex:1; min-width:0">'
+      + '<div style="display:flex; justify-content:space-between; gap:8px; align-items:center">'
+      + '<span class="name">'+esc(c.cat.name)+'</span>'
+      + '<span class="cnt'+(fertig?" ok":"")+'">'+(fertig?'<span style="line-height:0; width:14px">'+I.check+'</span>':'')
+      + c.angerechnet+'/'+c.cat.soll+(hatSubs?(auf?' ▾':' ▸'):'')+'</span></div>'
+      + '<div class="bar" style="margin-top:8px"><i class="'+(fertig?"done":"")+'" style="width:'+pct+'%"></i></div>'
+      + '<div class="meta">Absolviert '+c.angerechnet+'/'+c.cat.soll
+      + (c.ueber>0 ? '<span class="over"> · '+c.gesamt+' von '+c.cat.soll+', +'+c.ueber+' über Soll</span>' : '')
+      + (c.cat.hinweis ? ' · '+esc(c.cat.hinweis) : '')
+      + '</div></div></div></button>';
+    if(hatSubs && auf){
+      h += '<div class="subs">';
+      c.subs.forEach(function(s){
+        h += '<div class="subrow"><span style="color:'+(s.gesamt>0?"var(--ink)":"var(--faint)")+'">'+esc(s.sub.name)+'</span>'
+          + '<span class="r'+(s.angerechnet>=s.soll?" ok":"")+'">'+s.angerechnet+'/'+s.soll
+          + (s.ueber>0 ? '<span class="over"> · '+s.gesamt+' von '+s.soll+', +'+s.ueber+' über Soll</span>' : '')
+          + '</span></div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+  h += '</div>';
+
+  /* Geplant */
+  var geplant = S.entries.filter(function(e){ return e.status === "geplant"; })
+    .sort(function(x,y){ return ((x.date||"9999")+(x.time||"99:99")).localeCompare((y.date||"9999")+(y.time||"99:99")); });
+  h += '<h2>Geplante Termine ('+geplant.length+')</h2><div class="stack mb6">';
+  if(!geplant.length)
+    h += '<p class="hint" style="margin:0 0 0 4px">Keine geplanten Termine. Geplante Einträge zählen nicht in den Fortschritt.</p>';
+  geplant.forEach(function(e){
+    var past = e.date && e.date < heute;
+    h += '<div class="item'+(past?" past":"")+'">'
+      + '<span class="ic" style="background:none; padding:0; color:'+(past?"var(--red)":"var(--muted)")+'">'+I.clock+'</span>'
+      + '<div class="body"><div class="t">'+e.cat+') '+esc(CAT[e.cat].name)+(e.sub?" · "+esc(subName(e.cat,e.sub)):"")+'</div>'
+      + '<button class="s" data-act="edit" data-id="'+e.id+'">'+esc(zeile(e))
+      + (past ? " · liegt in der Vergangenheit: bestätigen oder löschen" : "")+' ✎</button></div>'
+      + '<button class="ic ok" data-act="status" data-id="'+e.id+'" aria-label="Als absolviert bestätigen">'+I.check+'</button>'
+      + '<button class="ic" data-act="del" data-id="'+e.id+'" aria-label="Termin löschen">'+I.trash+'</button>'
+      + '</div>';
+  });
+  h += '</div>';
+
+  /* Absolviert */
+  var fertigListe = S.entries.filter(function(e){ return e.status === "absolviert"; })
+    .sort(function(x,y){ return ((y.date||"0000")+(y.time||"00:00")).localeCompare((x.date||"0000")+(x.time||"00:00")); });
+  h += '<h2>Absolvierte Einträge ('+fertigListe.length+')</h2><div class="stack mb6">';
+  if(!fertigListe.length)
+    h += '<p class="hint" style="margin:0 0 0 4px">Noch nichts erfasst. Über „Eintragen" hinzufügen.</p>';
+  fertigListe.forEach(function(e){
+    h += '<div class="item">'
+      + '<div class="body"><div class="t">'+e.cat+') '+esc(CAT[e.cat].name)+(e.sub?" · "+esc(subName(e.cat,e.sub)):"")+'</div>'
+      + '<button class="s'+(e.date?"":" todo")+'" data-act="edit" data-id="'+e.id+'">'+esc(zeile(e))+' ✎</button></div>'
+      + '<button class="ic" data-act="status" data-id="'+e.id+'" aria-label="Auf geplant zurücksetzen">'+I.undo+'</button>'
+      + '<button class="ic" data-act="del" data-id="'+e.id+'" aria-label="Eintrag löschen">'+I.trash+'</button>'
+      + '</div>';
+  });
+  h += '</div>';
+
+  /* Daten */
+  h += '<h2>Daten</h2><div class="grid2 mb3">'
+    + '<button class="btn" data-act="json">'+I.down+' JSON sichern</button>'
+    + '<button class="btn" data-act="md">'+I.down+' Markdown</button>'
+    + '<button class="btn" data-act="import">'+I.up+' JSON laden</button>'
+    + '<button class="btn" data-act="show">Text anzeigen</button></div>';
+
+  if(S.entries.length){
+    h += S.confirmDel
+      ? '<button class="btn mb2" style="width:100%; background:var(--red); color:#fff; border:0" data-act="resetok">'
+        + 'Wirklich alle '+S.entries.length+' Einträge löschen?</button>'
+        + '<button class="btn mb3" style="width:100%" data-act="resetno">Abbrechen</button>'
+      : '<button class="btn mb3" style="width:100%; color:var(--red); border-color:#E4B7AE" data-act="reset">'
+        + 'Alle Einträge löschen</button>';
+  }
+
+  h += '<div class="card" style="padding:12px">'
+    + '<div class="hint" style="color:'+(speicherOk?"var(--muted)":"var(--red)")+'">'
+    + (speicherOk ? "Speicher aktiv. Die Daten liegen in diesem Browser auf diesem Gerät."
+                  : "Speicher nicht verfügbar. Die Einträge gehen beim Schließen verloren — bitte per JSON sichern.")
+    + '</div><div class="hint" style="margin-top:6px">Der Import ersetzt den gesamten Bestand durch den Inhalt der Datei.</div></div>'
+    + '<div style="height:24px"></div>';
+
+  document.getElementById("app").innerHTML = h;
+  renderOverlay();
+}
+
+function zeile(e){
+  var t = e.date ? isoToDe(e.date) : "Datum nachtragen";
+  if(e.time) t += " · " + e.time + " Uhr";
+  if(e.guide) t += " · bei " + e.guide;
+  if(e.en) t += " · Englisch";
+  return t;
+}
+function kpi(lab, val, sub){
+  return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+val+'</div>'
+       + (sub ? '<div class="sub">'+sub+'</div>' : '')+'</div>';
+}
+
+/* ---------- Overlays ---------- */
+function renderOverlay(){
+  var o = document.getElementById("overlay");
+  if(S.text){
+    o.innerHTML = '<div class="scrim" data-act="close"><div class="sheet" data-stop="1">'
+      + '<div class="top"><h3>'+esc(S.text.titel)+'</h3><button class="ic" data-act="close">'+I.x+'</button></div>'
+      + '<textarea readonly>'+esc(S.text.text)+'</textarea></div></div>';
+    return;
+  }
+  if(S.edit){
+    var e = S.edit, guides = guideListe();
+    o.innerHTML = '<div class="scrim" data-act="close"><div class="sheet" data-stop="1">'
+      + '<div class="top"><h3>Eintrag ergänzen</h3><button class="ic" data-act="close">'+I.x+'</button></div>'
+      + '<p class="hint mb3" style="color:var(--muted); font-size:14px">'+e.cat+') '+esc(CAT[e.cat].name)
+      + (e.sub?" · "+esc(subName(e.cat,e.sub)):"")+'</p>'
+      + '<div class="grid2 mb3"><div><div class="lab">Datum</div>'
+      + '<input type="date" id="f-date" value="'+(e.date||"")+'"></div>'
+      + '<div><div class="lab">Uhrzeit</div><input type="time" id="f-time" value="'+(e.time||"")+'"></div></div>'
+      + '<div class="lab">Guide</div><input type="text" id="f-guide" placeholder="Name des Guides" value="'+esc(e.guide||"")+'">'
+      + chips(guides, e.guide, "editguide")
+      + '<div class="lab" style="margin-top:16px">Sprache</div><div class="grid2">'
+      + '<button class="chip'+(!e.en?" on":"")+'" style="justify-content:center; padding:12px" data-act="editlang" data-en="0">Deutsch</button>'
+      + '<button class="chip'+(e.en?" on":"")+'" style="justify-content:center; padding:12px" data-act="editlang" data-en="1">Englisch</button>'
+      + '</div>'
+      + '<button class="primary" style="margin-top:16px" data-act="saveedit">Änderungen speichern</button>'
+      + '</div></div>';
+    return;
+  }
+  if(S.sheet){
+    var s = S.sheet, c = s.cat ? CAT[s.cat] : null;
+    var brauchtSub = !!(c && c.subs);
+    var bereit = !!c && (!brauchtSub || !!s.sub) && !!s.date;
+    var html = '<div class="scrim" data-act="close"><div class="sheet" data-stop="1">'
+      + '<div class="top"><h3>Durchführung eintragen</h3><button class="ic" data-act="close">'+I.x+'</button></div>'
+      + '<div class="lab">Kategorie</div><div class="chips mb4">';
+    CATS.forEach(function(k){
+      html += '<button class="chip'+(s.cat===k.id?" on":"")+'" data-act="pickcat" data-cat="'+k.id+'">'+k.id+') '+esc(k.name)+'</button>';
+    });
+    html += '</div>';
+    if(brauchtSub){
+      html += '<div class="lab">Unterthema</div><div class="chips mb4">';
+      c.subs.forEach(function(x){
+        html += '<button class="chip'+(s.sub===x.id?" on":"")+'" data-act="picksub" data-sub="'+x.id+'">'+esc(x.name)+'</button>';
+      });
+      html += '</div>';
+    }
+    html += '<div class="grid2 mb3"><div><div class="lab">Datum</div>'
+      + '<input type="date" id="f-date" value="'+(s.date||"")+'"></div>'
+      + '<div><div class="lab">Uhrzeit</div><input type="time" id="f-time" value="'+(s.time||"")+'"></div></div>'
+      + '<div class="lab">Guide</div><input type="text" id="f-guide" placeholder="Name des Guides" value="'+esc(s.guide||"")+'">'
+      + chips(guideListe(), s.guide, "newguide")
+      + '<div class="lab" style="margin-top:16px">Sprache</div><div class="grid2 mb4">'
+      + '<button class="chip'+(!s.en?" on":"")+'" style="justify-content:center; padding:12px" data-act="picklang" data-en="0">Deutsch</button>'
+      + '<button class="chip'+(s.en?" on":"")+'" style="justify-content:center; padding:12px" data-act="picklang" data-en="1">Englisch</button>'
+      + '</div>'
+      + '<div class="lab">Status</div><div class="grid2 mb4">'
+      + '<button class="chip'+(s.status==="absolviert"?" on":"")+'" style="justify-content:center; padding:12px" data-act="pickstatus" data-status="absolviert">Absolviert</button>'
+      + '<button class="chip'+(s.status==="geplant"?" on":"")+'" style="justify-content:center; padding:12px" data-act="pickstatus" data-status="geplant">Geplant</button>'
+      + '</div>'
+      + '<button class="primary" data-act="save"'+(bereit?"":" disabled")+'>'
+      + (bereit ? "Speichern" : (brauchtSub && !s.sub ? "Unterthema wählen" : "Kategorie wählen"))+'</button>'
+      + '</div></div>';
+    o.innerHTML = html;
+    return;
+  }
+  o.innerHTML = "";
+}
+
+function chips(list, aktiv, act){
+  if(!list.length) return "";
+  var h = '<div class="chips" style="margin-top:8px">';
+  list.forEach(function(g){
+    h += '<button class="chip sm'+((aktiv||"").trim()===g?" on":"")+'" data-act="'+act+'" data-guide="'+esc(g)+'">'+esc(g)+'</button>';
+  });
+  return h+'</div>';
+}
+
+/* Werte aus offenen Feldern übernehmen, bevor neu gezeichnet wird */
+function harvest(){
+  var t = S.edit || S.sheet; if(!t) return;
+  var d = document.getElementById("f-date"), z = document.getElementById("f-time"), g = document.getElementById("f-guide");
+  if(d) t.date = d.value || null;
+  if(z) t.time = z.value || null;
+  if(g) t.guide = g.value;
+}
+
+/* ---------- Export / Import ---------- */
+function jsonText(){ return JSON.stringify({version:1, exportiert:todayISO(), entries:S.entries}, null, 2); }
+function mdText(){
+  var a = auswerten(S.entries);
+  var rows = S.entries.slice().sort(function(x,y){
+    return ((x.date||"9999")+(x.time||"99:99")).localeCompare((y.date||"9999")+(y.time||"99:99"));
+  });
+  var out = "# Pflichthospitationen Stadtführung\n\nStand: "+isoToDe(todayISO())
+    + " · Angerechnet: "+a.angerechnetGesamt+"/"+a.sollSumme+"\n\n"
+    + "| Datum | Uhrzeit | Kategorie | Unterthema | Guide | Sprache | Status |\n|---|---|---|---|---|---|---|\n";
+  rows.forEach(function(e){
+    out += "| "+(isoToDe(e.date)||"offen")+" | "+(e.time||"–")+" | "+e.cat+") "+CAT[e.cat].name
+        + " | "+(e.sub?subName(e.cat,e.sub):"–")+" | "+(e.guide||"–")
+        + " | "+(e.en?"Englisch":"Deutsch")+" | "+e.status+" |\n";
+  });
+  return out;
+}
+function download(text, name, mime){
+  try{
+    var b = new Blob([text], {type:mime});
+    var url = URL.createObjectURL(b);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }catch(err){
+    S.text = {titel:name, text:text}; renderOverlay();
+  }
+}
+
+document.getElementById("file").addEventListener("change", function(ev){
+  var f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      var data = JSON.parse(String(r.result));
+      if(!data || !Array.isArray(data.entries)) throw new Error("Feld 'entries' fehlt.");
+      S.entries = data.entries.filter(function(e){ return e && CAT[e.cat]; }).map(function(e,i){
+        return {id:e.id || "imp-"+i, cat:e.cat, sub:e.sub||null, date:e.date||null,
+                time:e.time||null, guide:e.guide||null, en: !!e.en,
+                status: e.status === "geplant" ? "geplant" : "absolviert"};
+      });
+      sichern(); render();
+    }catch(err){
+      S.text = {titel:"Import abgebrochen", text:"Die Datei ließ sich nicht lesen: "+err.message};
+      renderOverlay();
+    }
+  };
+  r.readAsText(f);
+  ev.target.value = "";
+});
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-act]");
+  if(!b){
+    if(ev.target.closest("[data-stop]")) return;
+    return;
+  }
+  var act = b.getAttribute("data-act");
+  var id = b.getAttribute("data-id");
+
+  if(act === "close"){ if(b.hasAttribute("data-stop")) return; harvest(); S.sheet = null; S.edit = null; S.text = null; renderOverlay(); return; }
+  if(act === "toggle"){ var k = b.getAttribute("data-cat"); S.open[k] = !S.open[k]; render(); return; }
+  if(act === "new"){ S.sheet = {cat:null, sub:null, date:todayISO(), time:"", guide:"", en:false, status:"absolviert"}; renderOverlay(); return; }
+  if(act === "pickcat"){ harvest(); S.sheet.cat = b.getAttribute("data-cat"); S.sheet.sub = null; renderOverlay(); return; }
+  if(act === "picksub"){ harvest(); S.sheet.sub = b.getAttribute("data-sub"); renderOverlay(); return; }
+  if(act === "picklang"){ harvest(); S.sheet.en = b.getAttribute("data-en") === "1"; renderOverlay(); return; }
+  if(act === "editlang"){ harvest(); S.edit.en = b.getAttribute("data-en") === "1"; renderOverlay(); return; }
+  if(act === "pickstatus"){ harvest(); S.sheet.status = b.getAttribute("data-status"); renderOverlay(); return; }
+  if(act === "newguide"){ harvest(); var g = b.getAttribute("data-guide"); S.sheet.guide = (S.sheet.guide||"").trim() === g ? "" : g; renderOverlay(); return; }
+  if(act === "editguide"){ harvest(); var g2 = b.getAttribute("data-guide"); S.edit.guide = (S.edit.guide||"").trim() === g2 ? "" : g2; renderOverlay(); return; }
+  if(act === "save"){
+    harvest(); var s = S.sheet;
+    if(!s.cat || !s.date) return;
+    if(CAT[s.cat].subs && !s.sub) return;
+    S.entries.push({id:"e-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+      cat:s.cat, sub:s.sub||null, date:s.date, time:s.time||null,
+      guide:(s.guide && s.guide.trim()) ? s.guide.trim() : null, en: !!s.en, status:s.status});
+    S.sheet = null; sichern(); render(); return;
+  }
+  if(act === "edit"){
+    var e = S.entries.filter(function(x){ return x.id === id; })[0];
+    if(e){ S.edit = {id:e.id, cat:e.cat, sub:e.sub, date:e.date, time:e.time, guide:e.guide, en: !!e.en}; renderOverlay(); }
+    return;
+  }
+  if(act === "saveedit"){
+    harvest(); var t = S.edit;
+    S.entries = S.entries.map(function(x){
+      return x.id === t.id ? Object.assign({}, x, {date:t.date||null, time:t.time||null,
+        guide:(t.guide && t.guide.trim()) ? t.guide.trim() : null, en: !!t.en}) : x;
+    });
+    S.edit = null; sichern(); render(); return;
+  }
+  if(act === "status"){
+    S.entries = S.entries.map(function(x){
+      return x.id === id ? Object.assign({}, x, {status: x.status === "absolviert" ? "geplant" : "absolviert"}) : x;
+    });
+    sichern(); render(); return;
+  }
+  if(act === "del"){ S.entries = S.entries.filter(function(x){ return x.id !== id; }); sichern(); render(); return; }
+  if(act === "reset"){ S.confirmDel = true; render(); return; }
+  if(act === "resetno"){ S.confirmDel = false; render(); return; }
+  if(act === "resetok"){ S.entries = []; S.confirmDel = false; sichern(); render(); return; }
+  if(act === "json"){ download(jsonText(), "hospitationen-"+todayISO()+".json", "application/json"); return; }
+  if(act === "md"){ download(mdText(), "hospitationen-"+todayISO()+".md", "text/markdown"); return; }
+  if(act === "show"){ S.text = {titel:"Markdown-Tabelle", text:mdText()}; renderOverlay(); return; }
+  if(act === "import"){ document.getElementById("file").click(); return; }
+});
+
+/* ---------- Start ---------- */
+laden();
+render();
+if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
+  navigator.serviceWorker.register("sw.js").catch(function(){});
+}
+</script>
+</body>
+</html>
