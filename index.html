@@ -549,14 +549,16 @@ document.getElementById("file").addEventListener("change", function(ev){
 /* ---------- Ereignisse ---------- */
 document.addEventListener("click", function(ev){
   var b = ev.target.closest("[data-act]");
-  if(!b){
-    if(ev.target.closest("[data-stop]")) return;
-    return;
-  }
+  if(!b) return;
   var act = b.getAttribute("data-act");
   var id = b.getAttribute("data-id");
 
-  if(act === "close"){ if(b.hasAttribute("data-stop")) return; harvest(); S.sheet = null; S.edit = null; S.text = null; renderOverlay(); return; }
+  if(act === "close"){
+    /* Nur schließen, wenn die abdunkelnde Fläche selbst getroffen wurde,
+       nicht wenn der Klick aus dem Fenster nach oben durchgereicht wird. */
+    if(b.classList.contains("scrim") && ev.target.closest(".sheet")) return;
+    harvest(); S.sheet = null; S.edit = null; S.text = null; renderOverlay(); return;
+  }
   if(act === "toggle"){ var k = b.getAttribute("data-cat"); S.open[k] = !S.open[k]; render(); return; }
   if(act === "new"){ S.sheet = {cat:null, sub:null, date:todayISO(), time:"", guide:"", en:false, status:"absolviert"}; renderOverlay(); return; }
   if(act === "pickcat"){ harvest(); S.sheet.cat = b.getAttribute("data-cat"); S.sheet.sub = null; renderOverlay(); return; }
