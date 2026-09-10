@@ -36,9 +36,21 @@
   .total .num{font-size:32px; font-weight:700; color:var(--brick); line-height:1}
   .total .of{font-size:18px; color:var(--muted)}
   .flexb{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px}
-  .bar{height:8px; border-radius:99px; background:var(--track); overflow:hidden}
-  .bar > i{display:block; height:100%; border-radius:99px; background:var(--brick); transition:width .25s ease}
+  .bar{height:8px; border-radius:99px; background:var(--track); overflow:hidden; display:flex}
+  .bar > i{display:block; height:100%; background:var(--brick); transition:width .25s ease}
+  .bar > i:first-child{border-radius:99px 0 0 99px}
+  .bar > i:last-child{border-radius:0 99px 99px 0}
   .bar > i.done{background:var(--green)}
+  .bar > i.plan{background:#DCB9B2}
+  .note{font-size:12px; color:var(--brick); margin-top:2px}
+  .legende{display:flex; gap:14px; font-size:12px; color:var(--muted); margin-top:8px; flex-wrap:wrap}
+  .legende span{display:flex; align-items:center; gap:5px}
+  .swatch{width:10px; height:10px; border-radius:3px; display:inline-block}
+  .fehlt{font-size:14px; padding:7px 0; display:flex; justify-content:space-between; gap:12px}
+  .fehlt + .fehlt{border-top:1px solid #F0EAE0}
+  .fehlt b{font-weight:600; color:var(--brick)}
+  .backup{display:flex; gap:8px; align-items:center; padding:12px; border-radius:10px;
+          background:#FDF3E3; color:#7A5A14; font-size:14px; margin-bottom:12px}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   .kpi{padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff}
   .kpi .lab{font-size:12px; color:var(--muted)}
@@ -161,8 +173,10 @@ function fmt1(n){ return n.toFixed(1).replace(".",","); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 /* ---------- Auswertung ---------- */
-function auswerten(entries){
-  var done = entries.filter(function(e){ return e.status === "absolviert"; });
+function auswerten(entries, mitGeplant){
+  var done = entries.filter(function(e){
+    return e.status === "absolviert" || (mitGeplant && e.status === "geplant");
+  });
   var cats = CATS.map(function(cat){
     var mine = done.filter(function(e){ return e.cat === cat.id; });
     if(cat.mode === "frei"){
@@ -227,8 +241,63 @@ function auswerten(entries){
           ohneDatum: done.filter(function(e){ return !e.date; }).length};
 }
 
+/* ---------- Abgeleitete Auswertungen ---------- */
+
+/* Was fehlt konkret bis zum Soll */
+function fehlliste(a){
+  var out = [];
+  a.cats.forEach(function(c){
+    if(c.cat.mode === "kontingent"){
+      c.subs.forEach(function(s){
+        var n = s.soll - s.angerechnet;
+        if(n > 0) out.push({was:c.cat.id+") "+s.sub.name, n:n});
+      });
+    } else if(c.cat.mode === "verschieden"){
+      var n = c.cat.soll - c.angerechnet;
+      if(n > 0){
+        var offen = c.subs.filter(function(s){ return s.angerechnet === 0; })
+                          .map(function(s){ return s.sub.name; });
+        out.push({was:c.cat.id+") "+c.cat.name, n:n, zusatz:"noch offen: "+offen.join(", ")});
+      }
+    } else {
+      var m = c.cat.soll - c.angerechnet;
+      if(m > 0) out.push({was:c.cat.id+") "+c.cat.name, n:m});
+    }
+  });
+  return out;
+}
+
+/* Voraussichtliches Zieldatum beim bisherigen Schnitt */
+function zieldatum(a){
+  if(a.rest === 0) return {text:"Soll erfüllt", spaet:false};
+  if(!a.schnitt || a.schnitt <= 0) return {text:"—", spaet:false};
+  var tage = Math.ceil(a.rest / a.schnitt * 7);
+  var d = new Date(); d.setDate(d.getDate() + tage);
+  var iso = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  return {text:isoToDe(iso), spaet: d > DEADLINE};
+}
+
+/* Bringt ein geplanter Termin überhaupt eine Anrechnung? */
+function anrechnungKarte(){
+  var voll = auswerten(S.entries, true).angerechnetGesamt;
+  var karte = {};
+  S.entries.filter(function(e){ return e.status === "geplant"; }).forEach(function(e){
+    var ohne = S.entries.filter(function(x){ return x.id !== e.id; });
+    karte[e.id] = auswerten(ohne, true).angerechnetGesamt < voll;
+  });
+  return karte;
+}
+
+/* Würde ein neuer Eintrag dieser Art noch zählen? */
+function wuerdeZaehlen(cat, sub){
+  if(!cat) return true;
+  var probe = S.entries.concat([{id:"__probe", cat:cat, sub:sub||null, date:todayISO(),
+                                 time:null, guide:null, en:false, status:"absolviert"}]);
+  return auswerten(probe, true).angerechnetGesamt > auswerten(S.entries, true).angerechnetGesamt;
+}
+
 /* ---------- Zustand + Speicherung ---------- */
-var S = {entries:[], open:{}, sheet:null, edit:null, text:null, confirmDel:false};
+var S = {entries:[], open:{}, sheet:null, edit:null, text:null, confirmDel:false, seitSicherung:0};
 var speicherFehler = null;
 var speicherOk = (function(){
   try{ localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); return true; }
@@ -240,12 +309,17 @@ function laden(){
     var raw = localStorage.getItem(KEY);
     var data = raw ? JSON.parse(raw) : null;
     S.entries = (data && Array.isArray(data.entries)) ? data.entries : SEED();
-  }catch(err){ S.entries = SEED(); }
+    S.seitSicherung = (data && typeof data.seitSicherung === "number") ? data.seitSicherung : 0;
+  }catch(err){ S.entries = SEED(); S.seitSicherung = 0; }
 }
-function sichern(){
-  try{ localStorage.setItem(KEY, JSON.stringify({version:1, entries:S.entries})); speicherFehler = null; }
-  catch(err){ speicherFehler = "Speichern fehlgeschlagen. Daten per Export sichern."; }
+function schreiben(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify({version:2, entries:S.entries, seitSicherung:S.seitSicherung}));
+    speicherFehler = null;
+  }catch(err){ speicherFehler = "Speichern fehlgeschlagen. Daten per Export sichern."; }
 }
+/* jede inhaltliche Änderung erhöht den Zähler seit der letzten Sicherung */
+function sichern(){ S.seitSicherung = (S.seitSicherung || 0) + 1; schreiben(); }
 
 /* ---------- Icons ---------- */
 var I = {
@@ -278,10 +352,31 @@ function render(){
   /* Gesamt */
   var ampelFarbe = {gruen:"var(--green)", gelb:"var(--amber)", rot:"var(--red)", neutral:"var(--muted)"}[a.ampel];
   var ampelText = {gruen:"Im Plan", gelb:"Knapp über dem bisherigen Schnitt", rot:"Nicht im Plan", neutral:"Kein Schnitt berechenbar"}[a.ampel];
+
+  var pot = auswerten(S.entries, true);
+  var planAnteil = Math.max(pot.angerechnetGesamt - a.angerechnetGesamt, 0);
+  var planProzent = a.sollSumme ? pot.angerechnetGesamt/a.sollSumme*100 : 0;
+  var offenNach = Math.max(a.sollSumme - pot.angerechnetGesamt, 0);
+  var ziel = zieldatum(a);
+
+  if((S.seitSicherung || 0) >= 10)
+    h += '<div class="backup"><span>Seit der letzten Sicherung '+S.seitSicherung
+       + ' Änderungen. Die Daten liegen nur in diesem Browser.</span>'
+       + '<button class="btn" style="padding:8px 12px" data-act="json">Sichern</button></div>';
+
   h += '<section class="card total">'
     + '<div class="flexb"><div><span class="num">'+a.angerechnetGesamt+'</span><span class="of"> / '+a.sollSumme+'</span></div>'
-    + '<div class="hint" style="color:var(--muted); font-size:14px">'+Math.round(a.prozent)+' % · noch '+a.rest+'</div></div>'
-    + '<div class="bar"><i class="'+(a.rest===0?"done":"")+'" style="width:'+Math.min(a.prozent,100)+'%"></i></div>'
+    + '<div class="hint" style="color:var(--muted); font-size:14px; text-align:right">'+Math.round(a.prozent)+' % absolviert'
+    + (planAnteil > 0 ? '<br>'+Math.round(planProzent)+' % mit geplanten' : '')+'</div></div>'
+    + '<div class="bar">'
+    + '<i class="'+(a.rest===0?"done":"")+'" style="width:'+Math.min(a.prozent,100)+'%"></i>'
+    + (planAnteil > 0 ? '<i class="plan" style="width:'+Math.min(planAnteil/a.sollSumme*100,100)+'%"></i>' : '')
+    + '</div>'
+    + '<div class="legende">'
+    + '<span><i class="swatch" style="background:var(--brick)"></i>'+a.angerechnetGesamt+' absolviert</span>'
+    + '<span><i class="swatch" style="background:#DCB9B2"></i>'+planAnteil+' geplant</span>'
+    + '<span><i class="swatch" style="background:var(--track)"></i>'+offenNach+' offen</span>'
+    + '</div>'
     + '<div class="grid2" style="margin-top:12px">'
     + kpi("Verbleibende Zeit", a.restTage+" Tage", a.restWochenVoll+" volle Wochen")
     + kpi("Nötiges Tempo", isFinite(a.tempo) ? fmt1(a.tempo)+" / Woche" : "—",
@@ -291,6 +386,11 @@ function render(){
     + '<div class="kpi"><div class="lab">Status</div><div style="display:flex; align-items:center; gap:8px; margin-top:4px">'
     + '<span class="dot" style="background:'+ampelFarbe+'"></span>'
     + '<span style="font-size:14px; font-weight:500; color:'+ampelFarbe+'">'+ampelText+'</span></div></div>'
+    + kpi("Mit allen geplanten", pot.angerechnetGesamt+" / "+a.sollSumme,
+          offenNach > 0 ? "danach noch "+offenNach+" offen" : "Soll rechnerisch gedeckt")
+    + '<div class="kpi"><div class="lab">Zieldatum bei bisherigem Tempo</div>'
+    + '<div class="val" style="color:'+(ziel.spaet?"var(--red)":"var(--ink)")+'">'+ziel.text+'</div>'
+    + '<div class="sub">'+(ziel.spaet ? "nach der Frist" : (ziel.text === "—" ? "kein Schnitt berechenbar" : "vor der Frist"))+'</div></div>'
     + '</div>';
   var enZahl = S.entries.filter(function(e){ return e.status === "absolviert" && e.en; }).length;
   if(enZahl > 0)
@@ -307,6 +407,9 @@ function render(){
     var auf = !!S.open[c.cat.id];
     var hatSubs = c.subs.length > 0;
     var pct = Math.min(c.angerechnet/c.cat.soll*100, 100);
+    var cpot = pot.cats.filter(function(x){ return x.cat.id === c.cat.id; })[0];
+    var cplan = Math.max(cpot.angerechnet - c.angerechnet, 0);
+    var pctPlan = Math.min(cplan/c.cat.soll*100, 100-pct);
     h += '<div class="card">'
       + '<button class="cat" '+(hatSubs?'data-act="toggle" data-cat="'+c.cat.id+'"':'')+'>'
       + '<div class="head"><span class="tag'+(fertig?" ok":"")+'">'+c.cat.id+'</span><div style="flex:1; min-width:0">'
@@ -314,8 +417,10 @@ function render(){
       + '<span class="name">'+esc(c.cat.name)+'</span>'
       + '<span class="cnt'+(fertig?" ok":"")+'">'+(fertig?'<span style="line-height:0; width:14px">'+I.check+'</span>':'')
       + c.angerechnet+'/'+c.cat.soll+(hatSubs?(auf?' ▾':' ▸'):'')+'</span></div>'
-      + '<div class="bar" style="margin-top:8px"><i class="'+(fertig?"done":"")+'" style="width:'+pct+'%"></i></div>'
+      + '<div class="bar" style="margin-top:8px"><i class="'+(fertig?"done":"")+'" style="width:'+pct+'%"></i>'
+      + (cplan>0 ? '<i class="plan" style="width:'+pctPlan+'%"></i>' : '')+'</div>'
       + '<div class="meta">Absolviert '+c.angerechnet+'/'+c.cat.soll
+      + (cplan>0 ? ' · '+cplan+' geplant' : '')
       + (c.ueber>0 ? '<span class="over"> · '+c.gesamt+' von '+c.cat.soll+', +'+c.ueber+' über Soll</span>' : '')
       + (c.cat.hinweis ? ' · '+esc(c.cat.hinweis) : '')
       + '</div></div></div></button>';
@@ -333,9 +438,25 @@ function render(){
   });
   h += '</div>';
 
+  /* Was fehlt noch */
+  var fehlt = fehlliste(a);
+  h += '<h2>Was fehlt noch ('+a.rest+')</h2>';
+  if(!fehlt.length){
+    h += '<p class="hint" style="margin:0 0 24px 4px">Alle Soll-Werte sind erfüllt.</p>';
+  } else {
+    h += '<div class="card" style="padding:4px 14px 8px">';
+    fehlt.forEach(function(f){
+      h += '<div class="fehlt"><span>'+esc(f.was)
+        + (f.zusatz ? '<br><span class="hint">'+esc(f.zusatz)+'</span>' : '')
+        + '</span><b>'+f.n+'×</b></div>';
+    });
+    h += '</div><div style="height:24px"></div>';
+  }
+
   /* Geplant */
   var geplant = S.entries.filter(function(e){ return e.status === "geplant"; })
     .sort(function(x,y){ return ((x.date||"9999")+(x.time||"99:99")).localeCompare((y.date||"9999")+(y.time||"99:99")); });
+  var karte = anrechnungKarte();
   h += '<h2>Geplante Termine ('+geplant.length+')</h2><div class="stack mb6">';
   if(!geplant.length)
     h += '<p class="hint" style="margin:0 0 0 4px">Keine geplanten Termine. Geplante Einträge zählen nicht in den Fortschritt.</p>';
@@ -345,7 +466,9 @@ function render(){
       + '<span class="ic" style="background:none; padding:0; color:'+(past?"var(--red)":"var(--muted)")+'">'+I.clock+'</span>'
       + '<div class="body"><div class="t">'+e.cat+') '+esc(CAT[e.cat].name)+(e.sub?" · "+esc(subName(e.cat,e.sub)):"")+'</div>'
       + '<button class="s" data-act="edit" data-id="'+e.id+'">'+esc(zeile(e))
-      + (past ? " · liegt in der Vergangenheit: bestätigen oder löschen" : "")+' ✎</button></div>'
+      + (past ? " · liegt in der Vergangenheit: bestätigen oder löschen" : "")+' ✎</button>'
+      + (karte[e.id] === false ? '<div class="note">Bringt keine Anrechnung — Soll bereits gedeckt</div>' : '')
+      + '</div>'
       + '<button class="ic ok" data-act="status" data-id="'+e.id+'" aria-label="Als absolviert bestätigen">'+I.check+'</button>'
       + '<button class="ic" data-act="del" data-id="'+e.id+'" aria-label="Termin löschen">'+I.trash+'</button>'
       + '</div>';
@@ -466,6 +589,9 @@ function renderOverlay(){
       + '<button class="chip'+(s.status==="absolviert"?" on":"")+'" style="justify-content:center; padding:12px" data-act="pickstatus" data-status="absolviert">Absolviert</button>'
       + '<button class="chip'+(s.status==="geplant"?" on":"")+'" style="justify-content:center; padding:12px" data-act="pickstatus" data-status="geplant">Geplant</button>'
       + '</div>'
+      + ((bereit && !wuerdeZaehlen(s.cat, s.sub))
+          ? '<div class="note" style="margin-bottom:10px">Zählt nicht mehr aufs Soll. '
+            + 'Dieser Eintrag wird als Überschuss geführt.</div>' : '')
       + '<button class="primary" data-act="save"'+(bereit?"":" disabled")+'>'
       + (bereit ? "Speichern" : (brauchtSub && !s.sub ? "Unterthema wählen" : "Kategorie wählen"))+'</button>'
       + '</div></div>';
@@ -536,7 +662,7 @@ document.getElementById("file").addEventListener("change", function(ev){
                 time:e.time||null, guide:e.guide||null, en: !!e.en,
                 status: e.status === "geplant" ? "geplant" : "absolviert"};
       });
-      sichern(); render();
+      S.seitSicherung = 0; schreiben(); render();
     }catch(err){
       S.text = {titel:"Import abgebrochen", text:"Die Datei ließ sich nicht lesen: "+err.message};
       renderOverlay();
@@ -600,7 +726,10 @@ document.addEventListener("click", function(ev){
   if(act === "reset"){ S.confirmDel = true; render(); return; }
   if(act === "resetno"){ S.confirmDel = false; render(); return; }
   if(act === "resetok"){ S.entries = []; S.confirmDel = false; sichern(); render(); return; }
-  if(act === "json"){ download(jsonText(), "hospitationen-"+todayISO()+".json", "application/json"); return; }
+  if(act === "json"){
+    download(jsonText(), "hospitationen-"+todayISO()+".json", "application/json");
+    S.seitSicherung = 0; schreiben(); render(); return;
+  }
   if(act === "md"){ download(mdText(), "hospitationen-"+todayISO()+".md", "text/markdown"); return; }
   if(act === "show"){ S.text = {titel:"Markdown-Tabelle", text:mdText()}; renderOverlay(); return; }
   if(act === "import"){ document.getElementById("file").click(); return; }
