@@ -3,118 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#8C3B2F">
+<meta name="theme-color" content="#7B3B2E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Hospitationen">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grenze:wght@400;500;600;700&family=Grenze+Gotisch:wght@400;600;700&display=swap" rel="stylesheet">
 <title>Pflichthospitationen</title>
 <style>
   :root{
-    --brick:#8C3B2F; --brick-soft:#F1E3E0; --paper:#FAF7F2; --ink:#241F1D;
-    --line:#E7E0D6; --muted:#7A6E66; --faint:#9A8F86; --green:#3F7A4F;
-    --green-soft:#E4EFE6; --amber:#B07B14; --red:#A32F22; --red-soft:#FBECE9;
-    --field:#D8CFC2; --track:#E7E0D6;
+    --brick:#7B3B2E; --brick-soft:#F0E2DE; --plan:#C9A79C;
+    --paper:#F4EFE6; --ink:#2A2422; --line:#E3DBCF;
+    --muted:#79706A; --faint:#9A918A;
+    --green:#3E7A6B; --green-soft:#DDE9E4;
+    --amber:#9C7C2E; --amber-soft:#FBF2DF;
+    --red:#9E3024; --red-soft:#F8E8E4;
+    --field:#CFC3B2; --track:#DDD5C8;
+    --gotisch:"Grenze Gotisch", Georgia, serif;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; background:var(--paper); color:var(--ink)}
   body{
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+    font-family:"Grenze", Georgia, serif; font-size:16px; line-height:1.5;
+    padding-bottom:calc(100px + env(safe-area-inset-bottom));
     -webkit-text-size-adjust:100%;
   }
-  header{padding:20px 16px 12px; border-bottom:1px solid var(--line)}
-  header h1{font-family:Georgia,"Times New Roman",serif; font-size:21px; margin:0; font-weight:600}
-  header p{margin:2px 0 0; font-size:14px; color:var(--muted)}
-  main{padding:16px 16px 0}
-  h2{font-size:13px; color:var(--muted); margin:0 0 8px}
-  .card{background:#fff; border:1px solid var(--line); border-radius:12px}
+
+  /* ---------- Kopf ---------- */
+  header{
+    padding:17px 16px 15px; background:linear-gradient(177deg,#7B3B2E,#6A3126);
+    color:#F6EFE6; display:flex; align-items:center; gap:13px;
+  }
+  header .tor{flex:0 0 auto; width:50px; color:#E8C9BC}
+  header .tor svg{display:block; width:100%}
+  header h1{margin:0; font-family:var(--gotisch); font-size:26px; line-height:1.05; font-weight:400}
+  header p{margin:4px 0 0; font-size:13.5px; color:#E0C6BB; letter-spacing:.02em}
+
+  main{padding:16px 14px 0}
+  h2{font-family:var(--gotisch); font-size:15px; font-weight:600; color:var(--muted);
+     margin:0 0 9px; letter-spacing:.02em}
+  .card{background:#fff; border:1px solid var(--line); border-radius:5px}
   .stack>*+*{margin-top:8px}
-  .warn{display:flex; gap:8px; padding:12px; border-radius:10px; background:var(--red-soft); color:var(--red); font-size:14px; margin-bottom:12px}
-  .total{padding:16px; margin-bottom:16px}
-  .total .num{font-size:32px; font-weight:700; color:var(--brick); line-height:1}
-  .total .of{font-size:18px; color:var(--muted)}
-  .flexb{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px}
-  .bar{height:8px; border-radius:99px; background:var(--track); overflow:hidden; display:flex}
-  .bar > i{display:block; height:100%; background:var(--brick); transition:width .25s ease}
-  .bar > i:first-child{border-radius:99px 0 0 99px}
-  .bar > i:last-child{border-radius:0 99px 99px 0}
-  .bar > i.done{background:var(--green)}
-  .bar > i.plan{background:#DCB9B2}
-  .note{font-size:12px; color:var(--brick); margin-top:2px}
-  .legende{display:flex; gap:14px; font-size:12px; color:var(--muted); margin-top:8px; flex-wrap:wrap}
-  .legende span{display:flex; align-items:center; gap:5px}
-  .swatch{width:10px; height:10px; border-radius:3px; display:inline-block}
-  .fehlt{font-size:14px; padding:7px 0; display:flex; justify-content:space-between; gap:12px}
-  .fehlt + .fehlt{border-top:1px solid #F0EAE0}
-  .fehlt b{font-weight:600; color:var(--brick)}
-  .backup{display:flex; gap:8px; align-items:center; padding:12px; border-radius:10px;
-          background:#FDF3E3; color:#7A5A14; font-size:14px; margin-bottom:12px}
+  .warn{display:flex; gap:9px; padding:12px; border-radius:5px; background:var(--red-soft);
+        color:var(--red); font-size:14.5px; margin-bottom:12px; line-height:1.45}
+  .backup{display:flex; gap:10px; align-items:center; padding:11px 13px; border-radius:5px;
+          background:var(--amber-soft); color:#7A5A14; font-size:14px; margin-bottom:12px; line-height:1.4}
+
+  /* ---------- Mauerwerk ---------- */
+  .total{padding:15px 15px 13px; margin-bottom:12px}
+  .flexb{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:12px}
+  .total .num{font-size:38px; line-height:.92; font-weight:700; color:var(--brick)}
+  .total .of{font-size:19px; color:var(--muted)}
+  .reihen{display:flex; flex-direction:column; gap:3px}
+  .reihe{display:grid; grid-template-columns:repeat(8,1fr); gap:3px}
+  .ziegel{height:17px; border-radius:1.5px; background:var(--track)}
+  .ziegel.voll{background:var(--brick); box-shadow:inset 0 -3px 0 rgba(0,0,0,.13)}
+  .ziegel.voll.v1{background:#83422F} .ziegel.voll.v2{background:#733425}
+  .ziegel.plan{background:var(--plan)}
+  .legende{display:flex; gap:15px; flex-wrap:wrap; margin-top:11px; font-size:12.5px; color:var(--muted)}
+  .legende span{display:flex; align-items:center; gap:6px}
+  .swatch{width:11px; height:11px; border-radius:1.5px; display:inline-block}
+
+  /* ---------- Kennzahlen ---------- */
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .kpi{padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:#fff}
-  .kpi .lab{font-size:12px; color:var(--muted)}
-  .kpi .val{font-size:18px; font-weight:600; line-height:1.2}
-  .kpi .sub{font-size:12px; color:var(--muted); margin-top:2px}
-  .dot{display:inline-block; width:12px; height:12px; border-radius:99px}
-  .cat{width:100%; text-align:left; background:none; border:0; padding:12px 16px; font:inherit; color:inherit; display:block}
-  .cat .head{display:flex; gap:8px; align-items:flex-start}
-  .tag{flex:0 0 auto; width:22px; height:22px; border-radius:6px; font-size:12px; font-weight:700;
-       display:flex; align-items:center; justify-content:center; background:var(--brick-soft); color:var(--brick); margin-top:2px}
+  .kpi{padding:9px 11px; border:1px solid var(--line); border-radius:5px; background:#fff}
+  .kpi .lab{font-size:12.5px; color:var(--muted); line-height:1.3}
+  .kpi .val{font-size:19px; font-weight:600; line-height:1.25; margin-top:2px}
+  .kpi .sub{font-size:12.5px; color:var(--faint); margin-top:1px; line-height:1.3}
+  .dot{display:inline-block; width:11px; height:11px; border-radius:99px}
+
+  /* ---------- Planungslage ---------- */
+  .prognose{padding:13px 15px; margin-bottom:12px; border-left:3px solid var(--green)}
+  .prognose.gelb{border-left-color:var(--amber)}
+  .prognose.rot{border-left-color:var(--red)}
+  .prognose.grau{border-left-color:var(--field)}
+  .prognose .titel{font-family:var(--gotisch); font-size:13px; color:var(--muted); margin-bottom:5px}
+  .prognose .satz{font-size:15.5px; line-height:1.45}
+  .prognose .satz b{color:var(--green); font-weight:600}
+  .prognose.gelb .satz b{color:var(--amber)}
+  .prognose.rot .satz b{color:var(--red)}
+  .prognose.grau .satz b{color:var(--muted)}
+  .prognose .detail{font-size:12.5px; color:var(--faint); margin-top:6px; line-height:1.45}
+
+  /* ---------- Kategorien ---------- */
+  .cat{width:100%; text-align:left; background:none; border:0; padding:12px 14px; font:inherit; color:inherit; display:block}
+  .cat .head{display:flex; gap:9px; align-items:flex-start}
+  .tag{flex:0 0 auto; width:25px; height:25px; border-radius:3px; font-size:14px; font-weight:700;
+       display:flex; align-items:center; justify-content:center;
+       background:var(--brick-soft); color:var(--brick); margin-top:1px; font-family:var(--gotisch)}
   .tag.ok{background:var(--green-soft); color:var(--green)}
-  .cat .name{font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cat .name{font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .cat .cnt{font-size:14px; color:var(--muted); flex:0 0 auto; display:flex; align-items:center; gap:4px}
-  .cat .cnt.ok{color:var(--green)}
-  .meta{font-size:12px; color:var(--muted); margin-top:6px}
+  .cat .cnt.ok{color:var(--green); font-weight:600}
+  .bar{height:6px; border-radius:99px; background:var(--track); overflow:hidden; display:flex; margin-top:9px}
+  .bar > i{display:block; height:100%; background:var(--brick); transition:width .25s ease}
+  .bar > i.done{background:var(--green)}
+  .bar > i.plan{background:var(--plan)}
+  .meta{font-size:12.5px; color:var(--faint); margin-top:6px; line-height:1.4}
   .over{color:var(--brick)}
-  .subs{padding:4px 16px 12px; border-top:1px solid #F0EAE0}
-  .subrow{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:14px}
-  .subrow .r{font-size:12px; color:var(--muted)}
+  .subs{padding:4px 14px 11px; border-top:1px solid #F0EAE0}
+  .subrow{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:14.5px}
+  .subrow .r{font-size:12.5px; color:var(--muted)}
   .subrow .r.ok{color:var(--green)}
-  .item{display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fff; border:1px solid var(--line); border-radius:12px}
-  .item.past{background:var(--red-soft); border-color:#E4B7AE}
+
+  /* ---------- Was fehlt ---------- */
+  .fehlt{font-size:14.5px; padding:8px 0; display:flex; justify-content:space-between; gap:12px; line-height:1.4}
+  .fehlt + .fehlt{border-top:1px solid #F0EAE0}
+  .fehlt b{font-weight:600; color:var(--brick); flex:0 0 auto}
+
+  /* ---------- Einträge ---------- */
+  .item{display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fff;
+        border:1px solid var(--line); border-radius:5px}
+  .item.past{background:var(--red-soft); border-color:#E0B4AA}
   .item .body{flex:1; min-width:0}
-  .item .t{font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .item .s{font-size:12px; color:var(--muted); background:none; border:0; padding:0; font-family:inherit; text-align:left}
+  .item .t{font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .item .s{font-size:12.5px; color:var(--muted); background:none; border:0; padding:0;
+           font-family:inherit; text-align:left; line-height:1.4}
   .item.past .s{color:var(--red)}
   .item .s.todo{color:var(--brick)}
-  .ic{flex:0 0 auto; border:0; border-radius:9px; padding:9px; background:#F3EDE4; color:var(--muted); line-height:0}
+  .note{font-size:12.5px; color:var(--brick); margin-top:3px; line-height:1.35}
+  .ic{flex:0 0 auto; border:0; border-radius:4px; padding:9px; background:#F1EAE0; color:var(--muted); line-height:0}
   .ic.ok{background:var(--green-soft); color:var(--green)}
   .ic svg{width:16px; height:16px; display:block}
-  .btn{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:10px;
-       padding:12px; font:inherit; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px}
+
+  /* ---------- Knöpfe und Felder ---------- */
+  .btn{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:5px;
+       padding:12px; font-family:inherit; font-size:14.5px;
+       display:flex; align-items:center; justify-content:center; gap:8px}
   .btn svg{width:15px; height:15px}
-  .primary{background:var(--brick); color:#fff; border:0; border-radius:12px; padding:14px; font-size:16px; font-weight:500; width:100%;
-           display:flex; align-items:center; justify-content:center; gap:8px}
-  .primary[disabled]{background:var(--line); color:var(--faint)}
-  .fixed{position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  .primary{background:var(--brick); color:#F6EFE6; border:0; border-radius:5px; padding:14px;
+           font-family:var(--gotisch); font-size:18px; font-weight:600; width:100%;
+           display:flex; align-items:center; justify-content:center; gap:8px; letter-spacing:.02em}
+  .primary[disabled]{background:var(--track); color:var(--faint)}
+  .fixed{position:fixed; left:0; right:0; bottom:0; padding:12px 14px calc(12px + env(safe-area-inset-bottom));
          background:var(--paper); border-top:1px solid var(--line)}
   .chips{display:flex; flex-wrap:wrap; gap:6px}
-  .chip{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:10px; padding:8px 12px; font:inherit; font-size:14px}
-  .chip.on{background:var(--brick); color:#fff; border-color:var(--brick)}
-  .chip.sm{padding:6px 12px}
-  .lab{font-size:12px; color:var(--muted); margin-bottom:6px}
+  .chip{border:1px solid var(--field); background:#fff; color:var(--ink); border-radius:5px;
+        padding:9px 12px; font-family:inherit; font-size:14.5px}
+  .chip.on{background:var(--brick); color:#F6EFE6; border-color:var(--brick)}
+  .chip.sm{padding:7px 12px}
+  .lab{font-size:12.5px; color:var(--muted); margin-bottom:6px}
   input[type=date],input[type=time],input[type=text]{
     width:100%; border:1px solid var(--field); background:#fff; color:var(--ink);
-    border-radius:10px; padding:12px; font:inherit; font-size:16px}
-  .scrim{position:fixed; inset:0; background:rgba(36,31,29,.45); display:flex; align-items:flex-end; z-index:50}
-  .sheet{width:100%; background:var(--paper); border-radius:16px 16px 0 0; padding:16px;
+    border-radius:5px; padding:12px; font-family:inherit; font-size:16px}
+
+  /* ---------- Overlays ---------- */
+  .scrim{position:fixed; inset:0; background:rgba(42,36,34,.48); display:flex; align-items:flex-end; z-index:50}
+  .sheet{width:100%; background:var(--paper); border-radius:14px 14px 0 0; padding:16px;
          padding-bottom:calc(16px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto}
-  .sheet h3{margin:0; font-size:16px; font-weight:600}
-  .sheet .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
-  textarea{width:100%; height:260px; border:1px solid var(--field); border-radius:10px; padding:8px;
+  .sheet h3{margin:0; font-family:var(--gotisch); font-size:18px; font-weight:600}
+  .sheet .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:13px}
+  textarea{width:100%; height:260px; border:1px solid var(--field); border-radius:5px; padding:8px;
            font-family:ui-monospace,monospace; font-size:12px; background:#fff; color:var(--ink)}
+
   .mb4{margin-bottom:16px} .mb3{margin-bottom:12px} .mb2{margin-bottom:8px} .mb6{margin-bottom:24px}
-  .hint{font-size:12px; color:var(--faint)}
+  .hint{font-size:12.5px; color:var(--faint); line-height:1.45}
   .hidden{display:none}
+  .leerzeichen{text-align:center; padding:18px 0 14px; color:#CFC3B5}
+  .leerzeichen svg{width:66px}
+  .leerzeichen p{margin:7px 0 0; font-size:13.5px; color:var(--faint)}
   button:focus-visible,input:focus-visible{outline:2px solid var(--brick); outline-offset:2px}
   @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Pflichthospitationen</h1>
-  <p>Stadtführung Lübeck · Frist 27.12.2026</p>
+  <span class="tor"><svg viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 40 C 7 28, 13 13, 19 4 C 25 13, 31 28, 36 40"/><path d="M64 40 C 69 28, 75 13, 81 4 C 87 13, 93 28, 98 40"/><path d="M19 4 V1"/><circle cx="19" cy="1.6" r="1.3" fill="currentColor" stroke="none"/><path d="M81 4 V1"/><circle cx="81" cy="1.6" r="1.3" fill="currentColor" stroke="none"/><path d="M2 40 Q 19 45 36 40"/><path d="M64 40 Q 81 45 98 40"/><path d="M4 43 V86"/><path d="M34 43 V86"/><path d="M66 43 V86"/><path d="M96 43 V86"/><path d="M36 48 L50 25 L64 48"/><path d="M36 48 H64"/><path d="M4 54 Q 19 56.8 34 54 L66 54 Q 81 56.8 96 54" stroke-width="1.5"/><path d="M4 62 Q 19 64.8 34 62 L66 62 Q 81 64.8 96 62" stroke-width="1.5"/><path d="M4 80 Q 19 82.8 34 80 L41 80" stroke-width="1.5"/><path d="M59 80 L66 80 Q 81 82.8 96 80" stroke-width="1.5"/><path d="M41 86 V77 A9 9 0 0 1 59 77 V86"/><path d="M0 86 H100"/></svg></span>
+  <div>
+    <h1>Pflichthospitationen</h1>
+    <p>Stadtf&uuml;hrung L&uuml;beck &middot; Frist 17.01.2027</p>
+  </div>
 </header>
 <main id="app"></main>
 <div class="fixed"><button class="primary" data-act="new">+ Eintragen</button></div>
@@ -125,7 +186,7 @@
 "use strict";
 
 /* ---------- Konfiguration ---------- */
-var DEADLINE = new Date(2026, 11, 27);
+var DEADLINE = new Date(2027, 0, 17);   /* 17.01.2027 */
 var KEY = "hospitationen_stadtfuehrung_v1";
 
 var CATS = [
@@ -222,7 +283,7 @@ function auswerten(entries, mitGeplant){
 
   var datiert = done.map(function(e){ return e.date; }).filter(Boolean).sort();
   var schnitt = null;
-  if(datiert.length){
+  if(datiert.length >= 3){   /* unter drei Terminen ist ein Schnitt reine Zufallszahl */
     var span = Math.max(daysBetween(parseISO(datiert[0]), heute)+1, 1);
     schnitt = datiert.length/(span/7);
   }
@@ -238,6 +299,7 @@ function auswerten(entries, mitGeplant){
   return {cats:cats, sollSumme:sollSumme, angerechnetGesamt:ang, rest:rest,
           prozent: sollSumme ? ang/sollSumme*100 : 0,
           restTage:restTage, restWochenVoll:wochenVoll, tempo:tempo, schnitt:schnitt, ampel:ampel,
+          datierte:datiert.length,
           ohneDatum: done.filter(function(e){ return !e.date; }).length};
 }
 
@@ -265,6 +327,94 @@ function fehlliste(a){
     }
   });
   return out;
+}
+
+/* Fortschritt als Mauerwerk: ein Ziegel je Pflichtdurchführung */
+function mauerwerk(voll, plan, gesamt){
+  var h = '<div class="reihen">', i = 0;
+  while(i < gesamt){
+    h += '<div class="reihe">';
+    for(var j = 0; j < 8 && i < gesamt; j++, i++){
+      h += '<i class="ziegel' + (i < voll ? " voll v"+(i%3) : (i < voll+plan ? " plan" : "")) + '"></i>';
+    }
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+
+/* Reicht die Planung bis zur Frist? Rechnet ab dem spaetesten geplanten Termin. */
+function planungslage(a){
+  var mitPlan = S.entries.filter(function(e){
+    return e.status === "absolviert" || (e.status === "geplant" && e.date);
+  });
+  var geplant = S.entries.filter(function(e){ return e.status === "geplant" && e.date; });
+  var pot = auswerten(mitPlan, true);
+  var offenNach = Math.max(a.sollSumme - pot.angerechnetGesamt, 0);
+  var bewertbar = a.schnitt !== null;
+
+  if(a.rest === 0)
+    return {stufe:"", satz:"Alle " + a.sollSumme + " Pflichtdurchf\u00fchrungen sind <b>absolviert</b>.", detail:""};
+
+  /* ohne geplante Termine: reine Tempobetrachtung */
+  if(!geplant.length){
+    if(!bewertbar)
+      return {stufe:"grau", satz:"Noch <b>keine Aussage m\u00f6glich</b>.",
+              detail:"Daf\u00fcr braucht es mindestens drei datierte Eintr\u00e4ge oder geplante Termine."};
+    var reicht = a.tempo <= a.schnitt;
+    var knapp  = !reicht && a.tempo <= a.schnitt * 1.3;
+    return {
+      stufe: reicht ? "" : (knapp ? "gelb" : "rot"),
+      satz: "Keine geplanten Termine. Bei deinem bisherigen Schnitt " +
+            (reicht ? "<b>reicht das Tempo</b>." : (knapp ? "wird es <b>knapp</b>." : "<b>reicht das Tempo nicht</b>.")),
+      detail: "N\u00f6tig sind " + fmt1(a.tempo) + " pro Woche, bisher schaffst du " + fmt1(a.schnitt) + "."
+    };
+  }
+
+  var letztes = geplant.map(function(e){ return e.date; }).sort().pop();
+  var nutzlos = geplant.length - (pot.angerechnetGesamt - a.angerechnetGesamt);
+  var meine = geplant.length === 1
+    ? "Mit deinem geplanten Termin"
+    : "Mit deinen " + geplant.length + " geplanten Terminen";
+
+  if(parseISO(letztes) > DEADLINE)
+    return {stufe:"rot", satz:"Ein geplanter Termin liegt <b>nach der Frist</b>.",
+            detail:"Letzter geplanter Termin: " + isoToDe(letztes) + ". Was danach liegt, z\u00e4hlt nicht mehr."};
+
+  var zusatz = nutzlos <= 0 ? ""
+    : (nutzlos === 1
+        ? " Einer der geplanten Termine bringt keine Anrechnung."
+        : " " + nutzlos + " der geplanten Termine bringen keine Anrechnung.");
+
+  if(offenNach === 0)
+    return {stufe:"", satz: meine + " ist das Soll <b>vollst\u00e4ndig gedeckt</b>.",
+            detail:"Letzter geplanter Termin: " + isoToDe(letztes) + "." + zusatz};
+
+  /* ab dem spaetesten Termin, fruehestens ab heute */
+  var ab = parseISO(letztes);
+  if(ab < sod(new Date())) ab = sod(new Date());
+  var tageNach = Math.max(daysBetween(ab, DEADLINE), 0);
+  var wochenNach = tageNach / 7;
+  var tempoNach = wochenNach > 0 ? offenNach / wochenNach : Infinity;
+
+  var detail = "Letzter geplanter Termin: " + isoToDe(letztes) + ". Danach fehlen noch " + offenNach
+             + " Durchf\u00fchrung" + (offenNach === 1 ? "" : "en")
+             + (isFinite(tempoNach)
+                 ? " in " + tageNach + " Tagen \u2014 " + fmt1(tempoNach) + " pro Woche."
+                 : ", aber es bleibt keine Zeit mehr.")
+             + zusatz;
+
+  if(!isFinite(tempoNach))
+    return {stufe:"rot", satz:"Nach dem letzten geplanten Termin bleibt <b>keine Zeit</b> f\u00fcr den Rest.", detail:detail};
+  if(!bewertbar)
+    return {stufe:"grau", satz: meine + " bleibt der Rest <b>noch nicht bewertbar</b>.",
+            detail:detail + " Ein Schnitt l\u00e4sst sich erst ab drei datierten Eintr\u00e4gen berechnen."};
+
+  var wort, stufe;
+  if(tempoNach <= a.schnitt){ stufe = "";     wort = "bist du <b>im Zeitplan</b>"; }
+  else if(tempoNach <= a.schnitt * 1.3){ stufe = "gelb"; wort = "wird es <b>knapp</b>"; }
+  else { stufe = "rot"; wort = "bist du <b>nicht im Zeitplan</b>"; }
+
+  return {stufe:stufe, satz: meine + " " + wort + ".", detail:detail};
 }
 
 /* Voraussichtliches Zieldatum beim bisherigen Schnitt */
@@ -321,6 +471,12 @@ function schreiben(){
 /* jede inhaltliche Änderung erhöht den Zähler seit der letzten Sicherung */
 function sichern(){ S.seitSicherung = (S.seitSicherung || 0) + 1; schreiben(); }
 
+/* ---------- Holstentor als Zeichen für leere Listen ---------- */
+var TOR = '<svg viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 40 C 7 28, 13 13, 19 4 C 25 13, 31 28, 36 40"/><path d="M64 40 C 69 28, 75 13, 81 4 C 87 13, 93 28, 98 40"/><path d="M19 4 V1"/><circle cx="19" cy="1.6" r="1.3" fill="currentColor" stroke="none"/><path d="M81 4 V1"/><circle cx="81" cy="1.6" r="1.3" fill="currentColor" stroke="none"/><path d="M2 40 Q 19 45 36 40"/><path d="M64 40 Q 81 45 98 40"/><path d="M4 43 V86"/><path d="M34 43 V86"/><path d="M66 43 V86"/><path d="M96 43 V86"/><path d="M36 48 L50 25 L64 48"/><path d="M36 48 H64"/><path d="M4 54 Q 19 56.8 34 54 L66 54 Q 81 56.8 96 54" stroke-width="1.5"/><path d="M4 62 Q 19 64.8 34 62 L66 62 Q 81 64.8 96 62" stroke-width="1.5"/><path d="M4 80 Q 19 82.8 34 80 L41 80" stroke-width="1.5"/><path d="M59 80 L66 80 Q 81 82.8 96 80" stroke-width="1.5"/><path d="M41 86 V77 A9 9 0 0 1 59 77 V86"/><path d="M0 86 H100"/></svg>';
+function leerzeichen(text){
+  return '<div class="leerzeichen">'+TOR+'<p>'+esc(text)+'</p></div>';
+}
+
 /* ---------- Icons ---------- */
 var I = {
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
@@ -350,8 +506,6 @@ function render(){
     h += '<div class="warn">'+esc(speicherFehler)+'</div>';
 
   /* Gesamt */
-  var ampelFarbe = {gruen:"var(--green)", gelb:"var(--amber)", rot:"var(--red)", neutral:"var(--muted)"}[a.ampel];
-  var ampelText = {gruen:"Im Plan", gelb:"Knapp über dem bisherigen Schnitt", rot:"Nicht im Plan", neutral:"Kein Schnitt berechenbar"}[a.ampel];
 
   var pot = auswerten(S.entries, true);
   var planAnteil = Math.max(pot.angerechnetGesamt - a.angerechnetGesamt, 0);
@@ -368,13 +522,10 @@ function render(){
     + '<div class="flexb"><div><span class="num">'+a.angerechnetGesamt+'</span><span class="of"> / '+a.sollSumme+'</span></div>'
     + '<div class="hint" style="color:var(--muted); font-size:14px; text-align:right">'+Math.round(a.prozent)+' % absolviert'
     + (planAnteil > 0 ? '<br>'+Math.round(planProzent)+' % mit geplanten' : '')+'</div></div>'
-    + '<div class="bar">'
-    + '<i class="'+(a.rest===0?"done":"")+'" style="width:'+Math.min(a.prozent,100)+'%"></i>'
-    + (planAnteil > 0 ? '<i class="plan" style="width:'+Math.min(planAnteil/a.sollSumme*100,100)+'%"></i>' : '')
-    + '</div>'
+    + mauerwerk(a.angerechnetGesamt, planAnteil, a.sollSumme)
     + '<div class="legende">'
     + '<span><i class="swatch" style="background:var(--brick)"></i>'+a.angerechnetGesamt+' absolviert</span>'
-    + '<span><i class="swatch" style="background:#DCB9B2"></i>'+planAnteil+' geplant</span>'
+    + '<span><i class="swatch" style="background:var(--plan)"></i>'+planAnteil+' geplant</span>'
     + '<span><i class="swatch" style="background:var(--track)"></i>'+offenNach+' offen</span>'
     + '</div>'
     + '<div class="grid2" style="margin-top:12px">'
@@ -382,15 +533,11 @@ function render(){
     + kpi("Nötiges Tempo", isFinite(a.tempo) ? fmt1(a.tempo)+" / Woche" : "—",
         a.rest===0 ? "Soll erfüllt" : (isFinite(a.tempo) ? "ca. "+fmt1(a.tempo)+" Führungen pro Woche nötig" : "Frist abgelaufen"))
     + kpi("Bisheriger Schnitt", a.schnitt!==null ? fmt1(a.schnitt)+" / Woche" : "—",
-        a.schnitt===null ? "Keine datierten Einträge" : "seit dem frühesten Datum")
-    + '<div class="kpi"><div class="lab">Status</div><div style="display:flex; align-items:center; gap:8px; margin-top:4px">'
-    + '<span class="dot" style="background:'+ampelFarbe+'"></span>'
-    + '<span style="font-size:14px; font-weight:500; color:'+ampelFarbe+'">'+ampelText+'</span></div></div>'
-    + kpi("Mit allen geplanten", pot.angerechnetGesamt+" / "+a.sollSumme,
-          offenNach > 0 ? "danach noch "+offenNach+" offen" : "Soll rechnerisch gedeckt")
+        a.datierte === 0 ? "Noch keine datierten Eintr\u00e4ge"
+          : (a.schnitt === null ? "Erst ab drei datierten Eintr\u00e4gen" : "seit dem fr\u00fchesten Datum"))
     + '<div class="kpi"><div class="lab">Zieldatum bei bisherigem Tempo</div>'
     + '<div class="val" style="color:'+(ziel.spaet?"var(--red)":"var(--ink)")+'">'+ziel.text+'</div>'
-    + '<div class="sub">'+(ziel.spaet ? "nach der Frist" : (ziel.text === "—" ? "kein Schnitt berechenbar" : "vor der Frist"))+'</div></div>'
+    + '<div class="sub">'+(ziel.spaet ? "nach der Frist" : (ziel.text === "—" ? "noch nicht berechenbar" : "vor der Frist"))+'</div></div>'
     + '</div>';
   var enZahl = S.entries.filter(function(e){ return e.status === "absolviert" && e.en; }).length;
   if(enZahl > 0)
@@ -399,6 +546,14 @@ function render(){
     h += '<p class="hint" style="margin:12px 0 0; color:var(--muted)">'+a.ohneDatum
        + ' absolvierte Einträge ohne Datum. Sie zählen im Fortschritt, aber nicht im Schnitt.</p>';
   h += '</section>';
+
+  /* Planungslage */
+  var pl = planungslage(a);
+  h += '<section class="card prognose ' + pl.stufe + '">'
+    + '<div class="titel">Planungslage</div>'
+    + '<div class="satz">' + pl.satz + '</div>'
+    + (pl.detail ? '<div class="detail">' + pl.detail + '</div>' : '')
+    + '</section>';
 
   /* Kategorien */
   h += '<h2>Kategorien</h2><div class="stack mb6">';
@@ -459,7 +614,7 @@ function render(){
   var karte = anrechnungKarte();
   h += '<h2>Geplante Termine ('+geplant.length+')</h2><div class="stack mb6">';
   if(!geplant.length)
-    h += '<p class="hint" style="margin:0 0 0 4px">Keine geplanten Termine. Geplante Einträge zählen nicht in den Fortschritt.</p>';
+    h += leerzeichen("Keine geplanten Termine");
   geplant.forEach(function(e){
     var past = e.date && e.date < heute;
     h += '<div class="item'+(past?" past":"")+'">'
@@ -480,7 +635,7 @@ function render(){
     .sort(function(x,y){ return ((y.date||"0000")+(y.time||"00:00")).localeCompare((x.date||"0000")+(x.time||"00:00")); });
   h += '<h2>Absolvierte Einträge ('+fertigListe.length+')</h2><div class="stack mb6">';
   if(!fertigListe.length)
-    h += '<p class="hint" style="margin:0 0 0 4px">Noch nichts erfasst. Über „Eintragen" hinzufügen.</p>';
+    h += leerzeichen("Noch nichts erfasst");
   fertigListe.forEach(function(e){
     h += '<div class="item">'
       + '<div class="body"><div class="t">'+e.cat+') '+esc(CAT[e.cat].name)+(e.sub?" · "+esc(subName(e.cat,e.sub)):"")+'</div>'
